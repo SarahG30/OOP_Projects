@@ -1,0 +1,230 @@
+#include <iostream>
+#include <cmath>
+#include <vector>
+#include <iomanip>
+
+using namespace std;
+
+# define M_PI 3.14159265358979323846
+
+class forma
+{
+protected:
+	double latura, baza;
+	//string interior;
+public:
+	forma() {
+		latura = 0; baza = 0;
+	}
+	forma(double l, double b)
+	{
+		latura = l; baza = b;
+	}
+	double perimetru_tri()
+	{
+		return 3 * latura;
+	}
+	double aria_tri()
+	{
+		return latura * baza / 2;
+	}
+	double perimetru_drept()
+	{
+		return 2 * latura + 2 * baza;
+	}
+	double aria_drept()
+	{
+		return latura * baza;
+	}
+	double perimetru_cerc()
+	{
+		return 2 * latura * M_PI;
+	}
+	double aria_cerc()
+	{
+		return M_PI * latura * latura;
+	}
+	double perimetru_patrat()
+	{
+		return 4 * latura;
+	}
+	double aria_patrat()
+	{
+		return latura * latura;
+	}
+};
+
+class robot
+{
+protected:
+	double grosime, precizie;
+public:
+	robot() { grosime = 0; precizie = 0; }
+	robot(double g, double p)
+	{
+		grosime = g; precizie = p;
+	}
+	virtual double calc_cost(double p, double t)
+	{
+		return grosime * precizie * p;
+	}
+};
+
+class robot1 : public robot
+{
+public:
+	robot1() { grosime = 0; precizie = 0; }
+	robot1(double g, double p)
+	{
+		grosime = g; precizie = p;
+	}
+	double calc_cost(double p, double t)
+	{
+		return grosime * precizie * p;
+	}
+};
+
+class robot2 : public robot
+{
+	double culoare;
+public:
+	robot2() { grosime = 0; precizie = 0; culoare = 0; }
+	robot2(double g, double p, double c)
+	{
+		grosime = g; precizie = p;
+		culoare = c;
+	}
+	double calc_cost(double p, double t)
+	{
+		if (p == 1)
+			return culoare * t;
+		else
+			return 0;
+	}
+};
+
+int main()
+{
+	double cp1, cp2, cp3, cc;
+	cin >> cp1 >> cp2 >> cp3 >> cc;
+	int n; cin >> n;
+
+	robot* r;
+	forma F;
+	//double* costuri = new double[n];
+	vector<double> costuri;
+	for (int i = 0; i < n; i++)
+	{
+		//costuri[i] = 0;
+		costuri.push_back(0);
+	}
+	double arie, perimetru;
+	bool x = 0;
+
+	for (int i = 0; i < n; i++)
+	{
+		double grosime, precizie = 0, latura1, latura2;
+		int tip_p;
+		string interior, figura;
+		cin >> grosime >> tip_p >> interior >> figura;
+		cin >> latura1;
+
+		if (tip_p == 1)
+		{
+			precizie = cp1;
+		}
+		if (tip_p == 2)
+		{
+			precizie = cp2;
+		}
+		if (tip_p == 3)
+		{
+			precizie = cp3;
+		}
+		if (figura == "CERC")
+		{
+			forma F(latura1, 0);
+			arie = F.aria_cerc();
+			perimetru = F.perimetru_cerc();
+			robot1 R1(grosime, precizie);
+			r = &R1;
+			costuri[i] = r->calc_cost(perimetru, 0);
+			robot2 R2(grosime, precizie, cc);
+			r = &R2;
+			if (interior == "GOALA")
+				x = 0;
+			else
+				x = 1;
+			costuri[i] += r->calc_cost(x, arie);
+		}
+		if (figura == "DREPTUNGHI")
+		{
+			cin >> latura2;
+			forma F(latura1, latura2);
+			arie = F.aria_drept();
+			perimetru = F.perimetru_drept();
+			robot1 R1(grosime, precizie);
+			r = &R1;
+			costuri[i] = r->calc_cost(perimetru, 0);
+			robot2 R2(grosime, precizie, cc);
+			r = &R2;
+			if (interior == "GOALA")
+				x = 0;
+			else
+				x = 1;
+			costuri[i] += r->calc_cost(x, arie);
+		}
+		if (figura == "TRIUNGHI")
+		{
+			cin >> latura2;
+			forma F(latura1, latura2);
+			arie = F.aria_tri();
+			perimetru = F.perimetru_tri();
+			robot1 R1(grosime, precizie);
+			r = &R1;
+			costuri[i] = r->calc_cost(perimetru, 0);
+			robot2 R2(grosime, precizie, cc);
+			r = &R2;
+			if (interior == "GOALA")
+				x = 0;
+			else
+				x = 1;
+			costuri[i] += r->calc_cost(x, arie);
+		}
+		if (figura == "PATRAT")
+		{
+			forma F(latura1, 0);
+			arie = F.aria_patrat();
+			perimetru = F.perimetru_patrat();
+			robot1 R1(grosime, precizie);
+			r = &R1;
+			costuri[i] = r->calc_cost(perimetru, 0);
+			robot2 R2(grosime, precizie, cc);
+			r = &R2;
+			if (interior == "GOALA")
+				x = 0;
+			else
+				x = 1;
+			costuri[i] += r->calc_cost(x, arie);
+		}
+	}
+	double aux;
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = i + 1; j < n; j++)
+		{
+			if (costuri[i] > costuri[j])
+			{
+				aux = costuri[i];
+				costuri[i] = costuri[j];
+				costuri[j] = aux;
+			}
+		}
+	}
+
+	for (int i = 0; i < n; i++)
+	{
+		cout << fixed << setprecision(2) << costuri[i] << " ";
+	}
+	return 0;
+}
