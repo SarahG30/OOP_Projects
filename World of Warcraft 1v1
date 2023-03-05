@@ -1,0 +1,489 @@
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+#include <sstream>
+
+using namespace std;
+
+class Effect
+{
+public:
+    int Power, STRATEG;
+    string Atac_type, ATR;
+    bool solo, attack;
+
+    Effect()
+    {
+        Power = 1;
+        STRATEG = 0;
+        Atac_type;
+        ATR;
+        solo = true;
+        attack = false;
+    }
+};
+
+class Attribute
+{
+public:
+    int LVL;
+    int CURRENT;
+    int STRATEG;
+    int BASE;
+};
+
+class Move;
+
+class WOW_Player
+{
+private:
+    string nume, control;
+    int LVL, EXP = 0;
+    map<string, Attribute> atribut;
+    vector<Move> move;
+public:
+    WOW_Player() = default;
+
+    WOW_Player(string allStuff)
+    {
+        stringstream myStream(allStuff);
+        myStream >> this->nume;
+        myStream >> atribut["HP"].BASE;
+        myStream >> atribut["ATK"].BASE;
+        myStream >> atribut["DEF"].BASE;
+        myStream >> atribut["SP_ATK"].BASE;
+        myStream >> atribut["SP_DEF"].BASE;
+        myStream >> atribut["SPD"].BASE;
+        LVL = 1;
+    }
+
+    WOW_Player operator=(const WOW_Player& aux)
+    {
+        map<string, Attribute> otheratribut = aux.atribut;
+        nume = aux.nume;
+        atribut["HP"].BASE = otheratribut["HP"].BASE;
+        atribut["ATK"].BASE = otheratribut["ATK"].BASE;
+        atribut["DEF"].BASE = otheratribut["DEF"].BASE;
+        atribut["SP_ATK"].BASE = otheratribut["SP_ATK"].BASE;
+        atribut["SP_DEF"].BASE = otheratribut["SP_DEF"].BASE;
+        atribut["SPD"].BASE = otheratribut["SPD"].BASE;
+        return *this;
+    }
+
+    void ResetFighter(int complete)
+    {
+        atribut["HP"].LVL = ((atribut["HP"].BASE * LVL) / 50) + LVL + 10;
+        atribut["ATK"].LVL = ((atribut["ATK"].BASE * LVL) / 50) + 10;
+        atribut["DEF"].LVL = ((atribut["DEF"].BASE * LVL) / 50) + 10;
+        atribut["SP_ATK"].LVL = ((atribut["SP_ATK"].BASE * LVL) / 50) + 10;
+        atribut["SP_DEF"].LVL = ((atribut["SP_DEF"].BASE * LVL) / 50) + 10;
+        atribut["SPD"].LVL = ((atribut["SPD"].BASE * LVL) / 50) + 10;
+
+        atribut["HP"].CURRENT = atribut["HP"].LVL;
+
+        UpdateSTRATEG("ATK", 0, complete);
+        UpdateSTRATEG("DEF", 0, complete);
+        UpdateSTRATEG("SP_ATK", 0, complete);
+        UpdateSTRATEG("SP_DEF", 0, complete);
+        UpdateSTRATEG("SPD", 0, complete);
+    }
+    void UpdateSTRATEG(string attr_nume, int toAdd, bool reset)
+    {
+        if (atribut["HP"].CURRENT > 0)
+        {
+            if (!reset)
+            {
+                atribut[attr_nume].STRATEG += toAdd;
+            }
+            else
+            {
+                atribut[attr_nume].STRATEG = 0;
+            }
+            if (atribut[attr_nume].STRATEG < -6)
+            {
+                atribut[attr_nume].STRATEG = -6;
+            }
+            if (atribut[attr_nume].STRATEG > 6)
+            {
+                atribut[attr_nume].STRATEG = 6;
+            }
+            if (atribut[attr_nume].STRATEG > 0)
+            {
+                atribut[attr_nume].CURRENT = (2 + atribut[attr_nume].STRATEG) * atribut[attr_nume].LVL / 2;
+            }
+            else
+            {
+                atribut[attr_nume].CURRENT = (2 * atribut[attr_nume].LVL) / (2 - atribut[attr_nume].STRATEG);
+            }
+            if (atribut[attr_nume].CURRENT <= 0)
+            {
+                atribut[attr_nume].CURRENT = 1;
+            }
+        }
+    }
+    void ProcessAttack(int movePower, string attackType, WOW_Player& attacker)
+    {
+        if (attackType == "ATK")
+        {
+            int amount = (attacker.getLVL() * movePower * attacker.getAtk()) / (60 * atribut["DEF"].CURRENT);
+            if (amount > 0)
+            {
+                atribut["HP"].CURRENT -= amount;
+            }
+            else
+            {
+                atribut["HP"].CURRENT--;
+            }
+        }
+        else
+        {
+
+            int amount = (attacker.getLVL() * movePower * attacker.getSPAtk()) / (60 * atribut["SP_DEF"].CURRENT);
+            if (amount > 0)
+                atribut["HP"].CURRENT -= amount;
+            else
+                atribut["HP"].CURRENT--;
+        }
+    }
+
+    int getSPAtk()
+    {
+        return atribut["SP_ATK"].CURRENT;
+    }
+
+    int getAtk()
+    {
+        return atribut["ATK"].CURRENT;
+    }
+
+    string getnume()
+    {
+        return nume;
+    }
+
+    void SetLVL(int val)
+    {
+        LVL = val;
+    }
+
+    void AddMove(Move toAdd);
+
+    void Setcontrol(string val)
+    {
+        control = val;
+    }
+
+    vector<Move> getmove()
+    {
+        return move;
+    }
+
+    int getLVL()
+    {
+        return LVL;
+    }
+
+    void addExp(int xp)
+    {
+        EXP += xp;
+        while (EXP >= 2 * LVL && LVL < 100)
+        {
+            EXP -= 2 * LVL;
+            LVL++;
+        }
+    }
+
+    string getcontrol()
+    {
+        return control;
+    }
+
+    int getHP()
+    {
+        return atribut["HP"].CURRENT;
+    }
+
+    int getSPD()
+    {
+        return atribut["SPD"].CURRENT;
+    }
+
+    int getSpDef()
+    {
+        return atribut["SP_DEF"].CURRENT;
+    }
+
+    int getDef()
+    {
+        return atribut["DEF"].CURRENT;
+    }
+};
+
+class Move
+{
+private:
+    string nume;
+    vector<Effect> effects;
+public:
+    Move(string toProcess)
+    {
+        stringstream proc(toProcess);
+        proc >> nume;
+        string aux;
+        while (proc >> aux)
+        {
+            if (aux == "DMG")
+            {
+                Effect buf;
+                proc >> buf.Power >> buf.Atac_type;
+                buf.attack = true;
+                buf.solo = false;
+                effects.push_back(buf);
+            }
+            if (aux == "SELF_MOD")
+            {
+                Effect buf;
+                proc >> buf.ATR >> buf.STRATEG;
+                buf.attack = false;
+                buf.solo = true;
+                effects.push_back(buf);
+            }
+            if (aux == "ENEMY_MOD")
+            {
+                Effect buf;
+                proc >> buf.ATR >> buf.STRATEG;
+                buf.attack = false;
+                buf.solo = false;
+                effects.push_back(buf);
+            }
+        }
+    }
+    void executare(WOW_Player& selfObj, WOW_Player& opponent)
+    {
+        for (int i = 0; i < (int)effects.size(); i++)
+        {
+            if (effects[i].solo && !effects[i].attack)
+            {
+                selfObj.UpdateSTRATEG(effects[i].ATR, effects[i].STRATEG, false);
+            }
+
+            if (effects[i].attack)
+            {
+                opponent.ProcessAttack(effects[i].Power, effects[i].Atac_type, selfObj);
+            }
+
+            if (!effects[i].solo && !effects[i].attack)
+            {
+                opponent.UpdateSTRATEG(effects[i].ATR, effects[i].STRATEG, false);
+            }
+        }
+    }
+
+    string getnume()
+    {
+        return nume;
+    }
+};
+
+void WOW_Player::AddMove(Move toAdd)
+{
+    move.push_back(toAdd);
+}
+
+void afisare_runda(WOW_Player myWOWn, vector<WOW_Player> opponents, int i)
+{
+    cout << myWOWn.getHP() << " ";
+    cout << myWOWn.getAtk() << " ";
+    cout << myWOWn.getDef() << " ";
+    cout << myWOWn.getSPAtk() << " ";
+    cout << myWOWn.getSpDef() << " ";
+    cout << myWOWn.getSPD() << endl;
+    cout << opponents[i].getHP() << " ";
+    cout << opponents[i].getAtk() << " ";
+    cout << opponents[i].getDef() << " ";
+    cout << opponents[i].getSPAtk() << " ";
+    cout << opponents[i].getSpDef() << " ";
+    cout << opponents[i].getSPD() << endl;
+}
+
+WOW_Player find_me(vector<WOW_Player> mWOW_Player, WOW_Player myWOWn, string ownWOWnume)
+{
+    for (int i = 0; i < (int)mWOW_Player.size(); i++)
+    {
+        if (mWOW_Player[i].getnume() == ownWOWnume)
+        {
+            myWOWn = mWOW_Player[i];
+            return myWOWn;
+        }
+    }
+    return myWOWn;
+}
+
+int main()
+{
+    string abilitiesFile;
+    string WOW_PlayerFile;
+
+    cin >> WOW_PlayerFile;
+    cin >> abilitiesFile;
+
+    ifstream abilitiesStream, WOW_PlayerStream;
+    abilitiesStream.open(abilitiesFile);
+    WOW_PlayerStream.open(WOW_PlayerFile);
+
+    vector<Move> myOpponent;
+    string buf;
+    while (getline(abilitiesStream, buf))
+    {
+        myOpponent.push_back(Move(buf));
+    }
+    vector<WOW_Player> mWOW_Player;
+    while (getline(WOW_PlayerStream, buf))
+    {
+        mWOW_Player.push_back(WOW_Player(buf));
+    }
+    WOW_Player myWOWn;
+    cin.get();
+    getline(cin, buf);
+    string ownWOWnume;
+    stringstream ownWOWStream(buf);
+
+    ownWOWStream >> ownWOWnume;
+    
+    myWOWn = find_me(mWOW_Player, myWOWn, ownWOWnume);
+
+    int LVL;
+
+    string control;
+    ownWOWStream >> LVL >> control;
+    myWOWn.SetLVL(LVL);
+    myWOWn.Setcontrol(control);
+    string abilitati;
+    while (ownWOWStream >> abilitati)
+    {
+        for (int i = 0; i < (int)myOpponent.size(); i++)
+        {
+            if (myOpponent[i].getnume() == abilitati)
+            {
+                myWOWn.AddMove(myOpponent[i]);
+                break;
+            }
+        }
+    }
+
+    int opponentIndex = 0;
+    vector<WOW_Player> opponents;
+    while (getline(cin, buf)) {
+        stringstream currentStream(buf);
+        string nume, scheme;
+        int localLVL;
+        currentStream >> nume >> localLVL >> scheme;
+        WOW_Player local;
+        for (int i = 0; i < (int)mWOW_Player.size(); i++)
+        {
+            if (mWOW_Player[i].getnume() == nume)
+            {
+                local = mWOW_Player[i];
+                break;
+            }
+        }
+        local.Setcontrol(scheme);
+        local.SetLVL(localLVL);
+        while (currentStream >> abilitati)
+        {
+            for (int i = 0; i < (int)myOpponent.size(); i++)
+            {
+                if (myOpponent[i].getnume() == abilitati)
+                {
+                    local.AddMove(myOpponent[i]);
+                    i = (int)myOpponent.size();
+                }
+            }
+        }
+        opponents.push_back(local);
+    }
+
+    myWOWn.ResetFighter(true);
+    int moveIndexOwn = 0;
+    for (int i = 0; i < (int)opponents.size(); i++)
+    {
+        opponents[i].ResetFighter(true);
+        myWOWn.ResetFighter(true);
+        afisare_runda(myWOWn, opponents, i);
+        int move_index = 0;
+        while (myWOWn.getHP() > 0 && opponents[i].getHP() > 0)
+        {
+            if (myWOWn.getSPD() >= opponents[i].getSPD())
+            {
+                if (myWOWn.getcontrol() == "USOR")
+                {
+                    myWOWn.getmove()[0].executare(myWOWn, opponents[i]);
+                }
+                else
+                {
+                    if ((int)myWOWn.getmove().size() == moveIndexOwn)
+                        moveIndexOwn = 0;
+                    myWOWn.getmove()[moveIndexOwn].executare(myWOWn, opponents[i]);
+                    moveIndexOwn++;
+                }
+                if (opponents[i].getHP() >= 0) {
+                    if (opponents[i].getcontrol() == "USOR")
+                    {
+                        opponents[i].getmove()[0].executare(opponents[i], myWOWn);
+                    }
+                    else
+                    {
+                        if ((int)opponents[i].getmove().size() == move_index)
+                        {
+                            move_index = 0;
+                        }
+                        opponents[i].getmove()[move_index].executare(opponents[i], myWOWn);
+                        move_index++;
+                    }
+                }
+            }
+            else
+            {
+                if (opponents[i].getcontrol() == "USOR")
+                {
+                    opponents[i].getmove()[0].executare(opponents[i], myWOWn);
+                }
+                if (opponents[i].getcontrol() == "MEDIU")
+                {
+                    if ((int)opponents[i].getmove().size() == move_index)
+                    {
+                        move_index = 0;
+                    }
+                    opponents[i].getmove()[move_index].executare(opponents[i], myWOWn);
+                    move_index++;
+                }
+                if (myWOWn.getHP() >= 0)
+                {
+                    if (myWOWn.getcontrol() == "USOR")
+                    {
+                        myWOWn.getmove()[0].executare(myWOWn, opponents[i]);
+                    }
+                    else
+                    {
+                        if ((int)myWOWn.getmove().size() == moveIndexOwn)
+                        {
+                            moveIndexOwn = 0;
+                        }
+                        myWOWn.getmove()[moveIndexOwn].executare(myWOWn, opponents[i]);
+                        moveIndexOwn++;
+                    }
+                }
+            }
+
+            afisare_runda(myWOWn, opponents, i);
+        }
+        if (myWOWn.getHP() > 0)
+        {
+            myWOWn.addExp(opponents[i].getLVL());
+        }
+        cout << endl;
+    }
+    return 0;
+}
